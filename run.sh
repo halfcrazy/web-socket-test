@@ -1,16 +1,24 @@
 #!/bin/sh
 
-cat << EOS > server.js
+cat << EOF > server.js
 console.log("Server started");
-var Msg = '';
-var WebSocketServer = require('ws').Server
-    , wss = new WebSocketServer({port: 8010});
-    wss.on('connection', function(ws) {
-        ws.on('message', function(message) {
-        console.log('Received from client: %s', message);
-        ws.send('Server received from client: ' + message);
+const WebSocket = require('ws');
+ 
+const wss = new WebSocket.Server({ port: 8010 });
+ 
+wss.on('connection', function connection(ws, req) {
+  const ip = req.socket.remoteAddress;
+  ws.on('message', function incoming(data) {
+    console.log('Received from client %s: %s', ip, data);
+    wss.clients.forEach(function each(client) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send('Server received from client ' + ip + ': ' + data);
+      }
     });
- });
-EOS
+  });
+});
+
+
+EOF
 
 node server.js
